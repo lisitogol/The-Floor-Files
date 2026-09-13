@@ -1,1 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Floor Files</title>
 
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- PANTALLA PRINCIPAL -->
+    <div id="menu">
+        <h1>THE FLOOR FILES</h1>
+        <p>Salva a la humanidad tomando fotos del piso.</p>
+
+        <button id="startButton">JUGAR</button>
+    </div>
+
+
+    <!-- JUEGO -->
+    <div id="game" class="hidden">
+
+        <!-- INFORMACIÓN -->
+        <div id="hud">
+            <div id="day">Día 1</div>
+            <div id="money">$0</div>
+            <div id="timer">50</div>
+        </div>
+
+
+        <!-- MUNDO -->
+        <div id="world">
+
+            <!-- El mapa se construirá aquí desde JavaScript -->
+
+            <div id="player">🧍</div>
+
+        </div>
+
+
+        <!-- TELÉFONO -->
+        <div id="phone" class="hidden">
+
+            <div id="phoneScreen">
+
+                <h2>📱 Teléfono</h2>
+
+                <div id="apps">
+
+                    <button class="app" id="galleryButton">
+                        🖼️<br>
+                        Galería
+                    </button>
+
+                    <button class="app" id="cameraButton">
+                        📷<br>
+                        Cámara
+                    </button>
+
+                    <button class="app" id="mapsButton">
+                        🗺️<br>
+                        Mapas
+                    </button>
+
+                    <button class="app" id="storeButton">
+                        ▶️<br>
+                        Play Store
+                    </button>
+
+                </div>
+
+                <div id="phoneContent"></div>
+
+                <button id="closePhone">Cerrar</button>
+
+            </div>
+
+        </div>
+
+
+        <!-- CONTROLES -->
+        <div id="controls">
+
+            <div id="joystick">
+                🕹️
+            </div>
+
+            <div id="actionButtons">
+
+                <button id="grabButton">
+                    🅰️
+                </button>
+
+                <button id="phoneButton">
+                    📱
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PANTALLA DE FINAL -->
+    <div id="endingScreen" class="hidden">
+
+        <h1 id="endingTitle">ENDING</h1>
+
+        <p id="endingText"></p>
+
+        <button id="restartButton">
+            JUGAR DE NUEVO
+        </button>
+
+    </div>
+
+
+    <!-- JAVASCRIPT -->
+    <script src="game.js"></script>
+
+</body>
+</html>
