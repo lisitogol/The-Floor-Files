@@ -1,0 +1,2 @@
+burno, antes que nada mucha gracias por jugar, es muy importante para mi, este juego ño tiene anuncios ni nada, hago esto por diversión para que personas como tú, que les encanta divertir rse, puedan hacerlo gratis, pero con un juego sencillito, aunque al principio no parezca tener sentido, te deja atrapado XD, en fin, muchas gracias por jugar :3 
+espero les guste mucho sin nada más que decir, puedes seguir mi cuenta de codepen, en donde publico más juegos :3
