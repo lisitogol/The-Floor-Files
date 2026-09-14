@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>The Floor Files 📸</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050508;
+            color: #fff;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #0d0e15;
+        }
+
+        canvas {
+            background: #111;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+            touch-action: none;
+            display: block;
+        }
+
+        /* UI Overlays & Menús */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(10, 10, 20, 0.94);
+            z-index: 50;
+        }
+
+        .hidden { display: none !important; }
+
+        /* HUD Superior */
+        #hud {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 550px;
+            background: rgba(20, 24, 40, 0.9);
+            border: 3px solid #3498db;
+            border-radius: 12px;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.6);
+            z-index: 10;
+        }
+
+        .hud-item { display: flex; align-items: center; gap: 6px; }
+
+        .alert-banner {
+            position: absolute;
+            top: 65px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e74c3c;
+            color: #fff;
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 13px;
+            animation: pulse 1s infinite alternate;
+            z-index: 10;
+            border: 2px solid #fff;
+        }
+
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(0.95); opacity: 0.8; }
+            100% { transform: translateX(-50%) scale(1.05); opacity: 1; }
+        }
+
+        /* Prompt de Interacción */
+        #interaction-prompt {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(46, 204, 113, 0.9);
+            color: #000;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        /* Controles Táctiles Flotantes */
+        #touch-controls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .touch-btn {
+            position: absolute;
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.18);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #fff;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .touch-btn:active { background: rgba(255, 255, 255, 0.5); }
+
+        #joystick-base {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            pointer-events: auto;
+        }
+
+        #joystick-stick {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(52, 152, 219, 0.85);
+            border: 2px solid #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        #btn-action { bottom: 40px; right: 30px; width: 68px; height: 68px; background: rgba(46, 204, 113, 0.35); border-color: #2ecc71; font-size: 22px; }
+        #btn-phone { bottom: 125px; right: 35px; width: 52px; height: 52px; background: rgba(155, 89, 182, 0.35); border-color: #9b59b6; font-size: 20px; }
+
+        /* Estilo Retro de Menús */
+        .title-box {
+            text-align: center;
+            border: 4px solid #3498db;
+            padding: 25px 35px;
+            border-radius: 16px;
+            background: rgba(15, 15, 25, 0.95);
+            box-shadow: 0 0 30px rgba(52, 152, 219, 0.4);
+            max-width: 85%;
+        }
+
+        .title-box h1 { font-size: 2.2rem; color: #f1c40f; margin-bottom: 12px; text-shadow: 3px 3px #c0392b; }
+        .title-box p { font-size: 0.95rem; color: #ecf0f1; margin-bottom: 22px; line-height: 1.4; }
+
+        .btn-retro {
+            background: #e67e22;
+            color: #fff;
+            border: none;
+            padding: 12px 28px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #d35400;
+            transition: all 0.1s;
+        }
+
+        .btn-retro:active { transform: translateY(4px); box-shadow: 0 1px 0 #d35400; }
+
+        /* Teléfono Móvil FloorOS */
+        #phone-screen {
+            position: absolute;
+            width: 290px;
+            height: 490px;
+            background: #1e1e2d;
+            border: 10px solid #333;
+            border-radius: 28px;
+            z-index: 60;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 0 35px rgba(0,0,0,0.95);
+        }
+
+        .phone-header { background: #111; padding: 8px 12px; font-size: 12px; border-bottom: 1px solid #444; display: flex; justify-content: space-between; }
+        .phone-header .close-btn { cursor: pointer; }
+        .phone-body { flex: 1; padding: 16px; background: #0f172a; display: flex; flex-wrap: wrap; gap: 12px; align-content: flex-start; }
+
+        .app-icon {
+            width: 65px;
+            height: 65px;
+            background: #1e293b;
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border: 1px solid #334155;
+            font-size: 10px;
+            text-align: center;
+            gap: 4px;
+        }
+        .app-icon span { font-size: 22px; }
+
+        .modal-view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+            z-index: 65;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 6px; margin-bottom: 10px; font-size: 13px; font-weight: bold; }
+        .modal-header button { background: none; border: none; color: #fff; font-size: 16px; cursor: pointer; }
+        .app-content-list { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .map-view-box { font-size: 11px; text-align: center; padding: 12px; line-height: 1.8; color: #cbd5e1; }
+        .btn-danger { background: #ef4444; color: #fff; border: none; padding: 6px; border-radius: 4px; margin-bottom: 8px; font-size: 11px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="interaction-prompt" class="hidden">🅰️ <span id="prompt-text">Interactuar</span></div>
+
+    <div id="hud">
+        <div class="hud-item">📅 DÍA <span id="hud-day">1</span></div>
+        <div class="hud-item">💰 $<span id="hud-money">0</span></div>
+        <div class="hud-item">⏳ <span id="hud-time">50</span>s</div>
+    </div>
+    <div id="alert-banner" class="alert-banner hidden">🚨 ¡EL PISO ESTÁ DESAPARECIENDO!</div>
+
+    <div id="touch-controls">
+        <div id="joystick-base">
+            <div id="joystick-stick"></div>
+        </div>
+        <div id="btn-action" class="touch-btn">🅰️</div>
+        <div id="btn-phone" class="touch-btn">📱</div>
+    </div>
+
+    <div id="menu-screen" class="overlay">
+        <div class="title-box">
+            <h1>THE FLOOR FILES</h1>
+            <p>📸 Salva a la humanidad tomando fotos del piso.</p>
+            <button class="btn-retro" onclick="startGame()">▶ JUGAR</button>
+        </div>
+    </div>
+
+    <div id="ending-screen" class="overlay hidden">
+        <div class="title-box">
+            <h1 id="ending-title">GOOD ENDING</h1>
+            <p id="ending-desc">Salvaste al mundo con tus fotografías.</p>
+            <button class="btn-retro" onclick="restartGame()">🔄 JUGAR DE NUEVO</button>
+        </div>
+    </div>
+
+    <div id="phone-screen" class="hidden">
+        <div class="phone-header">
+            <span>📱 FloorOS v1.0</span>
+            <span class="close-btn" onclick="togglePhone()">❌</span>
+        </div>
+        <div class="phone-body" id="phone-home">
+            <div class="app-icon" onclick="openApp('gallery')"><span>🖼️</span>Galería</div>
+            <div class="app-icon" onclick="takePhoto()"><span>📷</span>Cámara</div>
+            <div class="app-icon" onclick="openApp('maps')"><span>🗺️</span>Mapas</div>
+            <div class="app-icon" onclick="openApp('store')"><span>▶️</span>Play Store</div>
+            <div class="app-icon" onclick="openApp('trash')"><span>🗑️</span>Papelera</div>
+        </div>
+
+        <div id="app-gallery" class="modal-view hidden">
+            <div class="modal-header"><span>🖼️ Galería</span><button onclick="closeApp('gallery')">⬅️</button></div>
+            <div id="gallery-list" class="app-content-list"></div>
+        </div>
+        <div id="app-maps" class="modal-view hidden">
+            <div class="modal-header"><span>🗺️ Mapa del Pueblo</span><button onclick="closeApp('maps')">⬅️</button></div>
+            <div class="map-view-box">
+                <p>🛖 Casa del Jugador (Izq. Superior)</p>
+                <p>🏪 Tienda de Abarrotes (Der. Superior)</p>
+                <p>🔬 Laboratorio Secreto (Der. Inferior)</p>
+                <p>🛣️ Calles y Red Central (Centro)</p>
+            </div>
+        </div>
+        <div id="app-store" class="modal-view hidden">
+            <div class="modal-header"><span>▶️ Play Store</span><button onclick="closeApp('store')">⬅️</button></div>
+            <div style="font-size:12px; padding:8px; line-height: 1.6;">
+                <p>🟧 <b>The Floor Files</b> (Instalado)</p>
+                <p>🟩 <b>Futbol Sim Esqueleto</b> (Gratis)</p>
+                <p>🟨 <b>Simulador de Patata 3D</b> ($999)</p>
+            </div>
+        </div>
+        <div id="app-trash" class="modal-view hidden">
+            <div class="modal-header"><span>🗑️ Papelera</span><button onclick="closeApp('trash')">⬅️</button></div>
+            <button class="btn-danger" onclick="emptyTrash()">Vaciar Papelera Definitivamente</button>
+            <div id="trash-list" class="app-content-list"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- GLOBAL ENGINE STATE ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const WORLD_WIDTH = 640;
+const WORLD_HEIGHT = 480;
+const GRID_COLS = 16;
+const GRID_ROWS = 12;
+
+let state = {
+    day: 1,
+    money: 0,
+    time: 50,
+    scene: 'town', // 'town', 'house', 'shop', 'lab'
+    floorDisappearing: false,
+    photosMissionCount: 0,
+    nicePhotosCount: 0,
+    photos: [],
+    trash: [],
+    inventory: [],
+    endingAltState: {},
+    stats: { potatoes: 0, itemsBought: 0, phoneTime: 0, moved: false, bombUsed: false }
+};
+
+const player = {
+    x: 80,
+    y: 130,
+    w: 24,
+    h: 32,
+    speed: 3,
+    animFrame: 0,
+    animTimer: 0
+};
+
+let floorGrid = [];
+let keys = {};
+let joystickActive = false;
+let joystickVector = { x: 0, y: 0 };
+let gameTimerInterval = null;
+
+// --- ENDINGS MAESTROS Y FRASES ALTERNABLES ---
+const ENDINGS_DATA = {
+    'BAD_BOY': {
+        title: '💣 BAD BOY ENDING',
+        lines: [
+            "Tu objetivo era salvar la ciudad, al menos intentarlo, pero no, tenía que volverte un villano... 💀",
+            "Tenías que salvar la ciudad. Elegiste explotar el laboratorio. Excelente decisión, villano. 💀"
+        ]
+    },
+    'SECRET': {
+        title: '🗿 SECRET ENDING',
+        lines: [
+            "No hiciste absolutamente nada. Admirable nivel de flojera. 🗿",
+            "Te quedaste quieto mientras el mundo se acababa. Una estrategia... interesante. 🗿"
+        ]
+    },
+    'TRASH': {
+        title: '🗑️ TRASH ENDING',
+        lines: [
+            "Borraste las fotos. Luego las borraste otra vez. ¿Qué esperabas? 🗑️",
+            "La papelera tuvo una jornada laboral intensa. 🗑️"
+        ]
+    },
+    'PATATA': {
+        title: '🥔 PATATA ENDING',
+        lines: [
+            "Tienes tantas patatas que ya no sabes qué hacer con ellas. Excelente inversión. 🥔",
+            "El mundo se acabó, pero al menos tienes patatas. 🥔"
+        ]
+    },
+    'CAPITALISM': {
+        title: '🤑 CAPITALISM ENDING',
+        lines: [
+            "Moriste, pero rico. Al fin y al cabo, el dinero da felicidad. Así que moriste feliz. 🤑",
+            "No salvaste al mundo, pero tienes dinero. ¿Quién necesita un mundo cuando tienes dinero? 🤑"
+        ]
+    },
+    'PHONE': {
+        title: '📱 PHONE ADDICT ENDING',
+        lines: [
+            "Pasaste tanto tiempo con el celular que olvidaste que existía el piso. Tu teléfono sobrevivió. Tú no. 📱",
+            "Tu adicción al teléfono destruyó la misión. Pero tienes 5 estrellas en FloorOS. 📱"
+        ]
+    },
+    'PHOTOGRAPHER': {
+        title: '📸 PHOTOGRAPHER ENDING',
+        lines: [
+            "El mundo se acabó, pero tus fotos quedaron increíbles. Prioridades. 📸",
+            "No salvaste el mundo, pero tu galería quedó espectacular. 📸"
+        ]
+    },
+    'SHOPPING': {
+        title: '🛒 SHOPPING ENDING',
+        lines: [
+            "Compraste toda la tienda. ¿Para qué? No sabemos. Pero la compraste. 🛒",
+            "La tienda está vacía. Tú tienes todo. El mundo sigue desapareciendo. 🛒"
+        ]
+    },
+    'GOOD': {
+        title: '🟢 GOOD ENDING',
+        lines: [
+            "¡Salvaste al mundo! Ahora puedes volver a tu casa como si nada hubiera pasado. 👍",
+            "El piso volvió, la ciudad está a salvo y nadie entiende cómo lo lograste. 🫡"
+        ]
+    },
+    'BAD': {
+        title: '🔴 BAD ENDING',
+        lines: [
+            "No salvaste el mundo. Bueno... al menos lo intentaste. O ni eso. 💀",
+            "El piso desapareció y tú no pudiste hacer nada. 💀"
+        ]
+    },
+    'RANDOM': {
+        title: '❓ ??? ENDING',
+        lines: [
+            "Hiciste tantas cosas que ni nosotros sabemos qué ending darte. ❓",
+            "Lograste demasiadas cosas a la vez. El juego simplemente se rindió. ❓"
+        ]
+    }
+};
+
+// --- INICIALIZACIÓN DE AUDIO MEME (14 ARCHIVOS) ---
+let soundPlaylist = [];
+function initAudio() {
+    soundPlaylist = Array.from({length: 14}, (_, i) => i + 1);
+    for (let i = soundPlaylist.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [soundPlaylist[i], soundPlaylist[j]] = [soundPlaylist[j], soundPlaylist[i]];
+    }
+}
+function playNextMemeSound() {
+    if (soundPlaylist.length === 0) initAudio();
+    const soundNum = soundPlaylist.pop();
+    const filename = soundNum === 1 ? 'myinstants.mp3' : `myinstants ${soundNum}.mp3`;
+    const audio = new Audio(`audio/${filename}`);
+    audio.play().catch(e => console.log('Audio no interactuado aún o ausente:', filename));
+}
+
+// --- CONFIGURACIÓN DE PANTALLA & GRID ---
+function resize() {
+    const scale = Math.min(window.innerWidth / WORLD_WIDTH, window.innerHeight / WORLD_HEIGHT);
+    canvas.width = WORLD_WIDTH;
+    canvas.height = WORLD_HEIGHT;
+    canvas.style.width = `${WORLD_WIDTH * scale}px`;
+    canvas.style.height = `${WORLD_HEIGHT * scale}px`;
+}
+window.addEventListener('resize', resize);
+resize();
+initAudio();
+
+function initFloorGrid() {
+    floorGrid = [];
+    for (let r = 0; r < GRID_ROWS; r++) {
+        floorGrid[r] = [];
+        for (let c = 0; c < GRID_COLS; c++) {
+            floorGrid[r][c] = true;
+        }
+    }
+}
+initFloorGrid();
+
+// --- PERSISTENCIA (localStorage) ---
+function saveProgress() {
+    localStorage.setItem('floor_files_save', JSON.stringify({
+        money: state.money,
+        inventory: state.inventory,
+        photos: state.photos,
+        trash: state.trash,
+        endingAltState: state.endingAltState
+    }));
+}
+function loadProgress() {
+    const data = localStorage.getItem('floor_files_save');
+    if (data) {
+        const parsed = JSON.parse(data);
+        state.money = parsed.money || 0;
+        state.inventory = parsed.inventory || [];
+        state.photos = parsed.photos || [];
+        state.trash = parsed.trash || [];
+        state.endingAltState = parsed.endingAltState || {};
+    }
+}
+loadProgress();
+
+// --- TIMING & DÍAS ---
+function startTimer() {
+    if (gameTimerInterval) clearInterval(gameTimerInterval);
+    gameTimerInterval = setInterval(() => {
+        if (state.scene === 'town' || state.scene === 'house') {
+            state.time--;
+            document.getElementById('hud-time').innerText = state.time;
+
+            // Avance del Día 1 al Día 2
+            if (state.day === 1 && state.time <= 0) {
+                state.day = 2;
+                state.time = 50;
+                document.getElementById('hud-day').innerText = state.day;
+                document.getElementById('hud-time').innerText = state.time;
+                alert("🚨 ¡DÍA 2! El laboratorio advierte que la estructura del suelo comenzó a fallar.");
+                return;
+            }
+
+            // Emergencia del Día 2 (a los 10 segundos restantes)
+            if (state.day === 2 && state.time <= 10 && !state.floorDisappearing) {
+                state.floorDisappearing = true;
+                document.getElementById('alert-banner').classList.remove('hidden');
+            }
+
+            if (state.floorDisappearing && state.time % 2 === 0) {
+                removeOuterFloorLayer();
+            }
+
+            if (state.day === 2 && state.time <= 0) {
+                clearInterval(gameTimerInterval);
+                checkEndingsAndTrigger();
+            }
+        }
+    }, 1000);
+}
+
+function removeOuterFloorLayer() {
+    for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+            // Zona segura de paso hacia el laboratorio
+            if (c >= 6 && c <= 9 && r >= 5 && r <= 8) continue;
+            if (floorGrid[r][c]) {
+                floorGrid[r][c] = false;
+                return;
+            }
+        }
+    }
+}
+
+// --- RENDERIZADO CSS VECTORIAL 2D ---
+function drawPerson(x, y, colorBody, colorHead, frame) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    // Piernas (Animación simple)
+    ctx.fillStyle = '#1e293b';
+    const leg = (frame % 2 === 0) ? 3 : -3;
+    ctx.fillRect(4, 20, 6, 12 + leg);
+    ctx.fillRect(14, 20, 6, 12 - leg);
+
+    // Torso / Ropa
+    ctx.fillStyle = colorBody;
+    ctx.fillRect(2, 10, 20, 12);
+
+    // Cabeza
+    ctx.fillStyle = colorHead;
+    ctx.beginPath();
+    ctx.arc(12, 6, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Detalle de cara
+    ctx.fillStyle = '#000';
+    ctx.fillRect(9, 4, 2, 2);
+    ctx.fillRect(14, 4, 2, 2);
+
+    ctx.restore();
+}
+
+function drawBuilding(x, y, w, h, color, label, icon) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, w, h);
+
+    // Puerta
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(x + w/2 - 12, y + h - 25, 24, 25);
+
+    // Letrero
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${icon} ${label}`, x + w/2, y - 8);
+}
+
+function renderMap() {
+    ctx.clearRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+
+    if (state.scene === 'town') {
+        const tileW = WORLD_WIDTH / GRID_COLS;
+        const tileH = WORLD_HEIGHT / GRID_ROWS;
+
+        // Suelo y desintegración
+        for (let r = 0; r < GRID_ROWS; r++) {
+            for (let c = 0; c < GRID_COLS; c++) {
+                if (floorGrid[r][c]) {
+                    ctx.fillStyle = ((r + c) % 2 === 0) ? '#27ae60' : '#2ecc71';
+                    ctx.fillRect(c * tileW, r * tileH, tileW, tileH);
+                } else {
+                    ctx.fillStyle = '#030712';
+                    ctx.fillRect(c * tileW, r * tileH, tileW, tileH);
+                }
+            }
+        }
+
+        // Calles
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(220, 0, 80, WORLD_HEIGHT);
+        ctx.fillRect(0, 200, WORLD_WIDTH, 80);
+
+        // Edificios
+        drawBuilding(40, 40, 100, 85, '#e67e22', 'CASA', '🛖');
+        drawBuilding(480, 40, 110, 90, '#f39c12', 'TIENDA', '🏪');
+        drawBuilding(470, 310, 130, 110, '#3498db', 'LABORATORIO', '🔬');
+        drawBuilding(40, 320, 90, 80, '#64748b', 'DECO', '🏠');
+
+        // Jugador
+        drawPerson(player.x, player.y, '#e74c3c', '#f1c40f', player.animFrame);
+    } 
+    else if (state.scene === 'house') {
+        ctx.fillStyle = '#581c87';
+        ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+
+        // Cama
+        ctx.fillStyle = '#ef4444'; ctx.fillRect(50, 50, 70, 100);
+        ctx.fillStyle = '#fff'; ctx.fillRect(50, 50, 70, 25);
+        ctx.fillText('🛏️ Cama', 50, 40);
+
+        // Radio
+        ctx.fillStyle = '#ea580c'; ctx.fillRect(260, 50, 45, 45);
+        ctx.fillText('📻 Radio', 260, 40);
+
+        // Caja
+        ctx.fillStyle = '#d97706'; ctx.fillRect(460, 50, 55, 55);
+        ctx.fillText('📦 Caja', 460, 40);
+
+        // Salida
+        ctx.fillStyle = '#1e293b'; ctx.fillRect(270, 420, 100, 60);
+        ctx.fillStyle = '#fff'; ctx.fillText('🚪 Salida', 290, 410);
+
+        drawPerson(player.x, player.y, '#e74c3c', '#f1c40f', player.animFrame);
+    }
+    else if (state.scene === 'shop') {
+        ctx.fillStyle = '#7c2d12';
+        ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+
+        // Vendedor NPC
+        drawPerson(290, 50, '#059669', '#fde047', 0);
+        ctx.fillStyle = '#fff'; ctx.fillText('👨‍💼 Vendedor', 270, 40);
+
+        // Productos en exhibición
+        const items = [
+            { name: 'Patata', price: 3, icon: '🥔', x: 60 },
+            { name: 'Teléfono', price: 5, icon: '☎️', x: 190 },
+            { name: 'Bomba', price: 7, icon: '💣', x: 320 },
+            { name: 'Periódico', price: 2, icon: '📰', x: 450 }
+        ];
+
+        items.forEach(i => {
+            ctx.fillStyle = '#d97706';
+            ctx.fillRect(i.x, 140, 85, 80);
+            ctx.fillStyle = '#fff';
+            ctx.font = '22px sans-serif';
+            ctx.fillText(i.icon, i.x + 30, 180);
+            ctx.font = '11px monospace';
+            ctx.fillText(`${i.name} $${i.price}`, i.x + 10, 210);
+        });
+
+        // Salida
+        ctx.fillStyle = '#1e293b'; ctx.fillRect(270, 420, 100, 60);
+        ctx.fillStyle = '#fff'; ctx.fillText('🚪 Salida', 290, 410);
+
+        drawPerson(player.x, player.y, '#e74c3c', '#f1c40f', player.animFrame);
+    }
+    else if (state.scene === 'lab') {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+
+        // Científicos NPCs
+        drawPerson(220, 70, '#0284c7', '#fde047', 0);
+        drawPerson(360, 70, '#0284c7', '#fde047', 0);
+        ctx.fillStyle = '#38bdf8'; ctx.fillText('🔬 Mesa de Científicos 🧑‍🔬', 220, 50);
+
+        // Salida
+        ctx.fillStyle = '#1e293b'; ctx.fillRect(270, 420, 100, 60);
+        ctx.fillStyle = '#fff'; ctx.fillText('🚪 Salida', 290, 410);
+
+        drawPerson(player.x, player.y, '#e74c3c', '#f1c40f', player.animFrame);
+    }
+
+    updateInteractionPrompt();
+}
+
+// --- ACTUALIZACIÓN DE INTERACCIÓN & FÍSICA ---
+function update() {
+    let dx = 0, dy = 0;
+    if (keys['ArrowUp'] || keys['w'] || keys['W']) dy -= 1;
+    if (keys['ArrowDown'] || keys['s'] || keys['S']) dy += 1;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) dx -= 1;
+    if (keys['ArrowRight'] || keys['d'] || keys['D']) dx += 1;
+
+    if (joystickActive) {
+        dx = joystickVector.x;
+        dy = joystickVector.y;
+    }
+
+    if (dx !== 0 || dy !== 0) {
+        state.stats.moved = true;
+        player.x += dx * player.speed;
+        player.y += dy * player.speed;
+        player.animTimer++;
+        if (player.animTimer % 8 === 0) player.animFrame++;
+    }
+
+    // Colisiones con límites del mundo
+    player.x = Math.max(0, Math.min(WORLD_WIDTH - player.w, player.x));
+    player.y = Math.max(0, Math.min(WORLD_HEIGHT - player.h, player.y));
+}
+
+function updateInteractionPrompt() {
+    const prompt = document.getElementById('interaction-prompt');
+    const text = document.getElementById('prompt-text');
+    let msg = null;
+
+    if (state.scene === 'town') {
+        if (player.x > 30 && player.x < 130 && player.y > 30 && player.y < 120) msg = "Entrar a Casa";
+        else if (player.x > 470 && player.x < 580 && player.y > 30 && player.y < 130) msg = "Entrar a Tienda";
+        else if (player.x > 460 && player.x < 600 && player.y > 300 && player.y < 420) msg = "Entrar al Laboratorio";
+    }
+    else if (state.scene === 'house') {
+        if (player.x > 40 && player.x < 120 && player.y > 40 && player.y < 140) msg = "Acostarse en la Cama";
+        else if (player.x > 240 && player.x < 300 && player.y > 40 && player.y < 100) msg = "Escuchar Radio Meme";
+        else if (player.x > 440 && player.x < 520 && player.y > 40 && player.y < 110) msg = "Revisar Caja";
+        else if (player.y > 380) msg = "Salir al Pueblo";
+    }
+    else if (state.scene === 'shop') {
+        if (player.y < 220) msg = "Comprar Producto";
+        else if (player.y > 380) msg = "Salir al Pueblo";
+    }
+    else if (state.scene === 'lab') {
+        if (player.y < 160) msg = state.inventory.includes('Bomba 💣') ? "¡USAR BOMBA!" : "Entregar Fotos";
+        else if (player.y > 380) msg = "Salir al Pueblo";
+    }
+
+    if (msg) {
+        text.innerText = msg;
+        prompt.classList.remove('hidden');
+    } else {
+        prompt.classList.add('hidden');
+    }
+}
+
+function gameLoop() {
+    update();
+    renderMap();
+    requestAnimationFrame(gameLoop);
+}
+
+// --- ACCIONES DE INTERACCIÓN ---
+function interact() {
+    if (state.scene === 'town') {
+        if (player.x > 30 && player.x < 130 && player.y > 30 && player.y < 120) {
+            state.scene = 'house'; player.x = 300; player.y = 350;
+        } else if (player.x > 470 && player.x < 580 && player.y > 30 && player.y < 130) {
+            state.scene = 'shop'; player.x = 300; player.y = 350;
+        } else if (player.x > 460 && player.x < 600 && player.y > 300 && player.y < 420) {
+            if (state.day === 1) alert("🔬 Laboratorio: '¡Estamos calibrando equipos! Vuelve mañana.'");
+            else { state.scene = 'lab'; player.x = 300; player.y = 350; }
+        }
+    }
+    else if (state.scene === 'house') {
+        if (player.x > 40 && player.x < 120 && player.y > 40 && player.y < 140) alert("🛏️ Te acostaste un momento. ¡Qué cómodo!");
+        else if (player.x > 240 && player.x < 300 && player.y > 40 && player.y < 100) playNextMemeSound();
+        else if (player.x > 440 && player.x < 520 && player.y > 40 && player.y < 110) alert(`📦 Caja: ${state.inventory.length ? state.inventory.join(', ') : 'Vacía'}`);
+        else if (player.y > 380) { state.scene = 'town'; player.x = 85; player.y = 130; }
+    }
+    else if (state.scene === 'shop') {
+        if (player.y < 220) {
+            if (player.x > 50 && player.x < 145) buyItem('Patata 🥔', 3);
+            else if (player.x > 180 && player.x < 275) buyItem('Teléfono ☎️', 5);
+            else if (player.x > 310 && player.x < 405) buyItem('Bomba 💣', 7);
+            else if (player.x > 440 && player.x < 535) buyItem('Periódico 📰', 2);
+        } else if (player.y > 380) { state.scene = 'town'; player.x = 520; player.y = 140; }
+    }
+    else if (state.scene === 'lab') {
+        if (player.y < 160) {
+            if (state.inventory.includes('Bomba 💣')) {
+                state.stats.bombUsed = true;
+                triggerEnding('BAD_BOY');
+            } else if (state.photosMissionCount >= 2) {
+                restoreFloor();
+            } else {
+                alert("🔬 Científicos: '¡Necesitamos 2 fotos claras del piso para salvar el mundo!'");
+            }
+        } else if (player.y > 380) { state.scene = 'town'; player.x = 520; player.y = 300; }
+    }
+}
+
+function buyItem(item, price) {
+    if (state.money >= price) {
+        if (confirm(`¿Comprar ${item} por $${price}?`)) {
+            state.money -= price;
+            state.inventory.push(item);
+            state.stats.itemsBought++;
+            if (item.includes('Patata')) state.stats.potatoes++;
+            document.getElementById('hud-money').innerText = state.money;
+            saveProgress();
+            alert(`¡Compraste ${item}! Guardado en inventario.`);
+        }
+    } else alert("💰 No tienes dinero suficiente.");
+}
+
+function restoreFloor() {
+    alert("🔬 Entregaste las fotos. ¡Los científicos activaron el haz restaurador!");
+    initFloorGrid();
+    state.floorDisappearing = false;
+    document.getElementById('alert-banner').classList.add('hidden');
+    triggerEnding('GOOD');
+}
+
+// --- TELÉFONO & FOTOGRAFÍA ---
+function togglePhone() {
+    const el = document.getElementById('phone-screen');
+    el.classList.toggle('hidden');
+    if (!el.classList.contains('hidden')) state.stats.phoneTime++;
+}
+function openApp(appId) {
+    document.getElementById(`app-${appId}`).classList.remove('hidden');
+    if (appId === 'gallery') renderGallery();
+    if (appId === 'trash') renderTrash();
+}
+function closeApp(appId) { document.getElementById(`app-${appId}`).classList.add('hidden'); }
+
+function takePhoto() {
+    const isNice = Math.random() > 0.5;
+    const photo = {
+        id: Date.now(),
+        type: isNice ? '🌄 Foto Bonita' : '📸 Foto del Piso',
+        reward: isNice ? Math.floor(Math.random() * 2) + 1 : 0
+    };
+    state.photos.push(photo);
+    if (photo.type.includes('Piso')) state.photosMissionCount++;
+    if (isNice) {
+        state.nicePhotosCount++;
+        state.money += photo.reward;
+        document.getElementById('hud-money').innerText = state.money;
+        alert(`🌄 ¡Foto hermosa! Ganaste +$${photo.reward}`);
+    } else alert("📸 Foto del piso guardada.");
+    saveProgress();
+}
+
+function renderGallery() {
+    const list = document.getElementById('gallery-list');
+    list.innerHTML = state.photos.length === 0 ? '<p style="font-size:11px;">Vacío</p>' : '';
+    state.photos.forEach((p, idx) => {
+        const div = document.createElement('div');
+        div.style.cssText = "background:#1e293b; padding:6px; font-size:11px; display:flex; justify-content:space-between; align-items:center;";
+        div.innerHTML = `<span>${p.type}</span> <button onclick="deletePhoto(${idx})">🗑️</button>`;
+        list.appendChild(div);
+    });
+}
+function deletePhoto(idx) {
+    const del = state.photos.splice(idx, 1)[0];
+    state.trash.push(del);
+    saveProgress();
+    renderGallery();
+}
+function renderTrash() {
+    const list = document.getElementById('trash-list');
+    list.innerHTML = state.trash.length === 0 ? '<p style="font-size:11px;">Papelera vacía</p>' : '';
+    state.trash.forEach((p) => {
+        const div = document.createElement('div');
+        div.style.cssText = "background:#1e293b; padding:6px; font-size:11px;";
+        div.innerText = p.type;
+        list.appendChild(div);
+    });
+}
+function emptyTrash() {
+    if (state.trash.length >= 3) triggerEnding('TRASH');
+    state.trash = [];
+    saveProgress();
+    renderTrash();
+}
+
+// --- EVALUACIÓN Y PRIORIDAD DE ENDINGS ---
+function checkEndingsAndTrigger() {
+    if (state.stats.bombUsed) return triggerEnding('BAD_BOY');
+    if (!state.stats.moved && state.photos.length === 0) return triggerEnding('SECRET');
+    if (state.trash.length >= 4) return triggerEnding('TRASH');
+    if (state.stats.potatoes >= 3) return triggerEnding('PATATA');
+    if (state.money >= 15) return triggerEnding('CAPITALISM');
+    if (state.stats.phoneTime >= 6) return triggerEnding('PHONE');
+    if (state.nicePhotosCount >= 4) return triggerEnding('PHOTOGRAPHER');
+    if (state.stats.itemsBought >= 5) return triggerEnding('SHOPPING');
+    triggerEnding('BAD');
+}
+
+function triggerEnding(endingKey) {
+    if (gameTimerInterval) clearInterval(gameTimerInterval);
+    const endData = ENDINGS_DATA[endingKey] || ENDINGS_DATA['BAD'];
+    
+    // Frase alternable guardada por ending
+    let lineIdx = state.endingAltState[endingKey] || 0;
+    const lineText = endData.lines[lineIdx];
+    state.endingAltState[endingKey] = (lineIdx + 1) % endData.lines.length;
+    saveProgress();
+
+    document.getElementById('ending-title').innerText = endData.title;
+    document.getElementById('ending-desc').innerText = lineText;
+    document.getElementById('ending-screen').classList.remove('hidden');
+}
+
+function restartGame() {
+    state.day = 1;
+    state.time = 50;
+    state.scene = 'town';
+    state.floorDisappearing = false;
+    state.photosMissionCount = 0;
+    state.stats = { potatoes: 0, itemsBought: 0, phoneTime: 0, moved: false, bombUsed: false };
+    document.getElementById('hud-day').innerText = state.day;
+    document.getElementById('hud-time').innerText = state.time;
+    document.getElementById('ending-screen').classList.add('hidden');
+    document.getElementById('alert-banner').classList.add('hidden');
+    initFloorGrid();
+    startTimer();
+}
+
+function startGame() {
+    document.getElementById('menu-screen').classList.add('hidden');
+    startTimer();
+}
+
+// --- CONTROLES Y EVENTOS ---
+window.addEventListener('keydown', e => {
+    keys[e.key] = true;
+    if (e.key === 'e' || e.key === 'E' || e.key === ' ') interact();
+});
+window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+document.getElementById('btn-action').addEventListener('click', interact);
+document.getElementById('btn-phone').addEventListener('click', togglePhone);
+
+// Touch Joystick
+const stick = document.getElementById('joystick-stick');
+const base = document.getElementById('joystick-base');
+
+base.addEventListener('touchstart', handleTouch);
+base.addEventListener('touchmove', handleTouch);
+base.addEventListener('touchend', () => {
+    joystickActive = false;
+    stick.style.transform = `translate(0px, 0px)`;
+    joystickVector = { x: 0, y: 0 };
+});
+
+function handleTouch(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = base.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    let dx = touch.clientX - centerX;
+    let dy = touch.clientY - centerY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const maxR = 35;
+
+    if (dist > maxR) {
+        dx = (dx / dist) * maxR;
+        dy = (dy / dist) * maxR;
+    }
+
+    stick.style.transform = `translate(${dx}px, ${dy}px)`;
+    joystickVector = { x: dx / maxR, y: dy / maxR };
+    joystickActive = true;
+}
+
+// Bucle principal
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
